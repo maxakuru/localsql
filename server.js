@@ -3,13 +3,13 @@ const dbName = 'MapData',
         events: 'defaultConferenceEvents',
         sessions: 'sessions',
         rooms: 'rooms',
-        poi: 'poi'
+        pois: 'poi'
     },
     idNames = {
         events: 'eventId', // index doesn't exist
-        sessions: 'DessionReferenceID',
+        sessions: 'SessionReferenceID',
         rooms: 'RoomId',
-        poi: 'POIID'
+        pois: 'POIID'
     },
     port = process.env.PORT || 9999;
 
@@ -18,25 +18,29 @@ const db = new sqlite3.Database(`data/${dbName}.db`);
 const express = require('express');
 const api = express();
 
-api.get('/sessions', (req, res) => {
-    db.all(`SELECT * FROM ${tableNames.sessions}`, 
-        (err, all) => {
-            if(err) {
-                res.status(503);
-                res.send('No good, sorry m8.');
-            }
-            res.json({ "sessions" : all });
-    });
-});
-
-api.get('/sessions/:session_id', (req, res) => {
-    db.get(`SELECT * FROM ${tableNames.sessions} WHERE ${idNames.sessions} = ${req.params.session_id}`, 
+api.get(`*/*`, (req, res) => {
+    const route = req.url.split('/')[1],
+        singular = route.slice(0, -1),
+        param = req.url.split('/')[2];
+    db.get(`SELECT * FROM ${tableNames[route]} WHERE ${idNames[route]} = ${param}`, 
         (err, row) => {
             if(err) {
                 res.status(503);
                 res.send('No good, sorry m8.');
             }
-            res.json({ "session" : row });
+            res.json({ singular : row });
+    });
+});
+
+api.get('*', (req, res) => {
+    const route = req.url.split('/')[1];
+    db.all(`SELECT * FROM ${tableNames[route]}`, 
+        (err, all) => {
+            if(err) {
+                res.status(503);
+                res.send('No good, sorry m8.');
+            }
+            res.json({ route : all });
     });
 });
 
