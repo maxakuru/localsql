@@ -15,7 +15,7 @@ const dbName = 'data.db',
     port = process.env.PORT || 9999;
 
 const sqlite3 = require('sqlite3').verbose();
-const db = new sqlite3.Database(`data/${dbName}`);
+const db = new sqlite3.Database(`${__dirname}/data/${dbName}`);
 const express = require('express');
 const api = express();
 
