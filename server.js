@@ -1,18 +1,15 @@
 "use strict";
 const dbName = 'data.db',
     tableNames = {
-        events: 'defaultConferenceEvents',
-        sessions: 'sessions',
-        rooms: 'rooms',
-        pois: 'poi'
+        sessions: 'Sessions',
+        talks: 'Talks',
+        events: 'Events'
     },
-    // all primary key IDs should just be `id`
-    // idNames = {
-    //     events: 'eventId', 
-    //     sessions: 'SessionReferenceID',
-    //     rooms: 'RoomId',
-    //     pois: 'POIID'
-    // },
+    idNames = {
+        events: 'eventId', 
+        sessions: 'sessionId',
+        talks: 'talkId'
+    },
     port = process.env.PORT || 9999;
 console.log(`${__dirname}/data/${dbName}`);
 const sqlite3 = require('sqlite3').verbose();
@@ -31,13 +28,71 @@ app.get(`/favicon.ico`, (req,res) => {
     res.status(404);
 });
 
+app.get(`/sessions/:id`, (req, res) => {
+    console.log('Request: ', `SELECT * FROM ${tableNames.sessions} WHERE ${idNames.sessions} = ${req.params.id}`);
+    // db.all(`SELECT * FROM Sessions LEFT JOIN Talks ON Talks.sessionId=Sessions.sessionId WHERE Sessions.sessionId=${req.params.id}`, 
+    db.all(`SELECT Sessions.sessionId AS id,
+                    Sessions.sessionType,
+                    Sessions.track,
+                    Sessions.title AS sessionTitle,
+                    Sessions.description AS sessionDescription,
+                    Sessions.startDateTime,
+                    Sessions.endDateTime,
+                    Sessions.location,
+                    Sessions.building,
+                    Sessions.roomNumber,
+                    Sessions.video,
+                    Sessions.speakers as sessionSpeakers,
+                    Talks.title AS talkTitle,
+                    Talks.description AS talkDescription,
+                    Talks.keywords AS talkKeywords,
+                    Talks.speakers AS talkSpeakers
+            FROM Sessions
+                JOIN Talks
+                    ON Sessions.sessionId = Talks.sessionId
+                    WHERE Sessions.sessionId = "${req.params.id}"`,
+        (err, row) => {
+            console.log('row: ', row);
+            if(err) {
+                console.log('error: ', err);
+                res.status(503);
+                res.send('No good, sorry m8.');
+            } 
+            else {
+                res.status(200);
+                res.json({
+                    'session': row
+                });
+            }
+    });
+});
+
+app.get(`/events/:id`, (req, res) => {
+    console.log('Request: ', `SELECT * FROM ${tableNames.events} WHERE ${idNames.events} = ${req.params.id}`);
+    db.get(`SELECT * FROM ${tableNames.events} WHERE ${idNames.events} = ${req.params.id}`, 
+        (err, row) => {
+            console.log('row: ', row);
+            if(err) {
+                console.log('error: ', err);
+                res.status(503);
+                res.send('No good, sorry m8.');
+            } 
+            else {
+                res.status(200);
+                res.json({
+                    'event': row
+                });
+            }
+    });
+});
+
 app.get(`*`, (req, res) => {
     const route = req.url.split('/')[1],
         singular = route.slice(0, -1),
         param = req.url.split('/')[2];
     if(param){
-        console.log('Request: ', `SELECT * FROM ${tableNames[route]} WHERE id = ${param}`);
-        db.get(`SELECT * FROM ${tableNames[route]} WHERE id = ${param}`, 
+        console.log('Request: ', `SELECT * FROM ${tableNames[route]} WHERE ${idNames[route]} = ${param}`);
+        db.get(`SELECT * FROM ${tableNames[route]} WHERE ${idNames[route]} = ${param}`, 
             (err, row) => {
                 if(err) {
                     console.log('error: ', err);
