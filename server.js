@@ -28,8 +28,12 @@ app.get(`/favicon.ico`, (req,res) => {
     res.status(404);
 });
 
+const backupCall = () => {
+
+}
+
 app.get(`/sessions/:id`, (req, res) => {
-    console.log('Request: ', `SELECT * FROM ${tableNames.sessions} WHERE ${idNames.sessions} = ${req.params.id}`);
+    console.log('Session - Request: ', `SELECT * FROM ${tableNames.sessions} WHERE ${idNames.sessions} = ${req.params.id}`);
     // db.all(`SELECT * FROM Sessions LEFT JOIN Talks ON Talks.sessionId=Sessions.sessionId WHERE Sessions.sessionId=${req.params.id}`, 
     db.all(`SELECT Sessions.sessionId AS id,
                     Sessions.sessionType,
@@ -42,6 +46,7 @@ app.get(`/sessions/:id`, (req, res) => {
                     Sessions.building,
                     Sessions.roomNumber,
                     Sessions.video,
+                    Sessions.speakerNames as sessionSpeakerNames,
                     Sessions.speakers as sessionSpeakers,
                     Talks.title AS talkTitle,
                     Talks.description AS talkDescription,
@@ -59,16 +64,53 @@ app.get(`/sessions/:id`, (req, res) => {
                 res.send('No good, sorry m8.');
             } 
             else {
-                res.status(200);
-                res.json({
-                    'session': row
-                });
+                if(row.length === 0) {
+                    console.log('Got nothing, try: ');
+                    const callWithoutTalks = `SELECT Sessions.sessionId AS id,
+                            Sessions.sessionType,
+                            Sessions.track,
+                            Sessions.title AS sessionTitle,
+                            Sessions.description AS sessionDescription,
+                            Sessions.startDateTime,
+                            Sessions.endDateTime,
+                            Sessions.location,
+                            Sessions.building,
+                            Sessions.roomNumber,
+                            Sessions.video,
+                            Sessions.speakerNames as sessionSpeakerNames,
+                            Sessions.speakers as sessionSpeakers
+                    FROM Sessions
+                        WHERE Sessions.sessionId = "${req.params.id}"`;
+                    console.log(callWithoutTalks);
+                    db.all(callWithoutTalks,
+                        (err2, row2) => {
+                            console.log('row2: ', row2);
+                            if(err) {
+                                console.log('error2: ', err2);
+                                res.status(503);
+                                res.send('No good, sorry m8.');
+                            } 
+                            else {
+                                res.status(200);
+                                res.json({
+                                    'session': row2
+                                });
+                            }
+                        }
+                    );
+                } 
+                else {
+                    res.status(200);
+                    res.json({
+                        'session': row
+                    });
+                }
             }
     });
 });
 
 app.get(`/events/:id`, (req, res) => {
-    console.log('Request: ', `SELECT * FROM ${tableNames.events} WHERE ${idNames.events} = ${req.params.id}`);
+    console.log('Event - Request: ', `SELECT * FROM ${tableNames.events} WHERE ${idNames.events} = ${req.params.id}`);
     db.get(`SELECT * FROM ${tableNames.events} WHERE ${idNames.events} = ${req.params.id}`, 
         (err, row) => {
             console.log('row: ', row);
