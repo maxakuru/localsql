@@ -111,7 +111,7 @@ app.get(`/sessions/:id`, (req, res) => {
 
 app.get(`/events/:id`, (req, res) => {
     console.log('Event - Request: ', `SELECT * FROM ${tableNames.events} WHERE ${idNames.events} = ${req.params.id}`);
-    db.get(`SELECT * FROM ${tableNames.events} WHERE ${idNames.events} = ${req.params.id}`, 
+    db.get(`SELECT * FROM ${tableNames.events} WHERE ${idNames.events} = "${req.params.id}"`, 
         (err, row) => {
             console.log('row: ', row);
             if(err) {
